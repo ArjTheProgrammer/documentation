@@ -6,41 +6,17 @@ This repository will serve as a curated record of my learning journeys. 📌
 
 ## Learning Progress 📈
 
-<style>
-.status-badge {
-  display: inline-block;
-  padding: 0px 8px 0px 10px;
-  border-radius: 100px; 
-  text-align: center;
-  line-height: 25px;
-  /* font-family: sans-serif;  */
-  font-weight: 600;
-  
-}
+<!-- 
+For Upcoming
+[![Status](https://img.shields.io/badge/-Upcoming-blue.svg)](#)
 
-.status-badge.in-progress {
-  background-color:rgb(255, 234, 0, 0.10);
-  border: 0.5px solid #FFEA00;
-  color: #FFEA00;
-}
+For In Progress
+[![Progress](https://img.shields.io/badge/-In%20Progress-yellow.svg)](#) 
 
-.status-badge.upcoming {
-  background-color:rgb(0, 150, 255, 0.10); 
-  border: 1px solid #0096FF;
-  margin-left: 5px;
-  color: #0096FF;
-}
-
-.status-badge.done {
-  background-color:rgba(102, 255, 0, 0.10);
-  border: 1px solid #66FF00;
-  margin-left:  20px;
-  color: #66FF00;
-}
-</style>
+For Done
+[![Status](https://img.shields.io/badge/-Done-green.svg)](#)
+-->
 
 | Course | **Status** |
 |---|---|
-| **[Full Stack Open](https://fullstackopen.com/en/)** | <div class="status-badge in-progress">In Progress ⏳</div> |
-| **[Full Stack Open](https://fullstackopen.com/en/)** | <div class="status-badge upcoming">Upcoming 🚀</div> |
-| **[Full Stack Open](https://fullstackopen.com/en/)** | <div class="status-badge done">Done ✅</div> |
+| **[Full Stack Open](https://fullstackopen.com/en/)** | [![Progress](https://img.shields.io/badge/-In%20Progress-yellow.svg)](#) |
