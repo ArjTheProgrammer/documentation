@@ -18,5 +18,5 @@ For Done
 -->
 
 | Course | **Status** |
-|:---|:---:|
+|---|---|
 | **[Full Stack Open](https://fullstackopen.com/en/)** | [![Progress](https://img.shields.io/badge/-In%20Progress-yellow.svg)](#) |
