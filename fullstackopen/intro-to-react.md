@@ -11,7 +11,7 @@ still not finished
 npm create vite@latest introdemo -- --template react
 ```
 
-## Simplifying React main.jsx
+### Simplifying React main.jsx
 ```
 import ReactDOM from 'react-dom/client'
 
