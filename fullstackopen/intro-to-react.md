@@ -247,3 +247,57 @@ When the state modifying function setCounter is called, React re-renders the com
 }
 ```
 **Every time the setCounter modifies the state** it causes the component to **re-render**. The value of the state will be incremented again after one second, and this will continue to repeat for as long as the application is running.
+
+**Event handler is a function**
+
+Do not do this because it will break the app. 
+
+```
+<button onClick={setCounter(counter + 1)}> 
+  plus
+</button>
+```
+
+An event handler is supposed to be either a function or a function reference, and when we write setCounter like this then it will break:
+```
+<button onClick={setCounter(counter + 1)}>
+```
+
+the event handler is actually a function call. In many situations this is ok, but not in this particular situation. In the beginning, the value of the counter variable is 0. When React renders the component for the first time, it executes the function call setCounter(0+1), and changes the value of the component's state to 1. This will cause the component to be re-rendered, React will execute the setCounter function call again, and the state will change leading to another re-render...
+
+Let's define the event handlers like we did before:
+
+```
+<button onClick={() => setCounter(counter + 1)}> 
+  plus
+</button>
+```
+Now the button's attribute which defines what happens when the button is clicked - onClick - has the value `() => setCounter(counter + 1)`. The setCounter function is called only when a user clicks the button.
+
+### [Rules of hooks](https://react.dev/warnings/invalid-hook-call-warning#breaking-rules-of-hooks)
+```
+const App = () => {
+  // these are ok
+  const [age, setAge] = useState(0)
+  const [name, setName] = useState('Juha Tauriainen')
+
+  if ( age > 10 ) {
+    // this does not work!
+    const [foobar, setFoobar] = useState(null)
+  }
+
+  for ( let i = 0; i < age; i++ ) {
+    // also this is not good
+    const [rightWay, setRightWay] = useState(false)
+  }
+
+  const notGood = () => {
+    // and this is also illegal
+    const [x, setX] = useState(-1000)
+  }
+
+  return (
+    //...
+  )
+}
+```
