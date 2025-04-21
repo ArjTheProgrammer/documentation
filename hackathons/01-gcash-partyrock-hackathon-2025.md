@@ -7,7 +7,7 @@ I saw the GCash hackathon invitation from a senior, Rodney. I immediately called
 - **Group 1:** Me, Luis, Jonel, and Topher
 - **Group 2:** Emil, Octa, Dan, and Darren
 
-After a week of waiting, my group received an acceptance email, but Emil's team didn’t make it. It was disappointing, and it made us even more nervous because we needed Emil’s guidance.
+After a week of waiting, my group received an acceptance email, but Emil's team didn’t make it. It was sad, and it made us even more nervous because we needed Emil’s guidance.
 
 This was our **first-ever hackathon** as a college friend group. Our main goal was to gain hands-on experience on how hackathons work and what to expect in the future. Despite consulting other students about their hackathon experiences, we still felt unprepared. We strategized on how to **maximize our 1 hour and 30 minutes** effectively, but ultimately, the pressure got to us, and we couldn’t fully stick to our plan.
 
