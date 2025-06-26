@@ -16,10 +16,10 @@ The `-y` flag accepts all default values for the npm initialization.
 
 ## Installing Dependencies
 
-Install Express.js as a dependency:
+Install Express.js and MongoDB dependencies:
 
 ```bash
-npm install express
+npm install express mongoose
 ```
 
 ### Authentication Dependencies
@@ -108,7 +108,8 @@ Update your `package.json` scripts section:
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "mongoose": "^7.5.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
@@ -152,59 +153,248 @@ notes-backend/
 
 ## Basic Express Server
 
-Create an `index.js` file with a basic Express server:
+Create the main application file `index.js`:
 
 ```javascript
 const express = require('express')
+const mongoose = require('mongoose')
+const config = require('./utils/config')
+const logger = require('./utils/logger')
+const middleware = require('./utils/middleware')
+const notesRouter = require('./controllers/notes')
+
 const app = express()
 
-// Middleware to parse JSON
+logger.info('connecting to', config.MONGODB_URI)
+
+mongoose
+  .connect(config.MONGODB_URI)
+  .then(() => {
+    logger.info('connected to MongoDB')
+  })
+  .catch((error) => {
+    logger.error('error connection to MongoDB:', error.message)
+  })
+
+app.use(express.static('dist'))
 app.use(express.json())
+app.use(middleware.requestLogger)
 
-// Sample data
-let notes = [
-  {
-    id: 1,
-    content: "HTML is easy",
-    important: false
-  },
-  {
-    id: 2,
-    content: "Browser can execute only JavaScript",
-    important: true
-  },
-  {
-    id: 3,
-    content: "GET and POST are the most important methods of HTTP protocol",
-    important: true
-  }
-]
+app.use('/api/notes', notesRouter)
 
-// Routes
-app.get('/', (request, response) => {
-  response.send('<h1>Hello World!</h1>')
+app.use(middleware.unknownEndpoint)
+app.use(middleware.errorHandler)
+
+module.exports = app
+```
+
+Create the notes controller file `controllers/notes.js`:
+
+```javascript
+const notesRouter = require('express').Router()
+const Note = require('../models/note')
+
+notesRouter.get('/', (request, response) => {
+  Note.find({}).then(notes => {
+    response.json(notes)
+  })
 })
 
+notesRouter.get('/:id', (request, response, next) => {
+  Note.findById(request.params.id)
+    .then(note => {
+      if (note) {
+        response.json(note)
+      } else {
+        response.status(404).end()
+      }
+    })
+    .catch(error => next(error))
+})
+
+notesRouter.post('/', (request, response, next) => {
+  const body = request.body
+
+  const note = new Note({
+    content: body.content,
+    important: body.important || false,
+  })
+
+  note.save()
+    .then(savedNote => {
+      response.json(savedNote)
+    })
+    .catch(error => next(error))
+})
+
+notesRouter.delete('/:id', (request, response, next) => {
+  Note.findByIdAndDelete(request.params.id)
+    .then(() => {
+      response.status(204).end()
+    })
+    .catch(error => next(error))
+})
+
+notesRouter.put('/:id', (request, response, next) => {
+  const { content, important } = request.body
+
+  Note.findById(request.params.id)
+    .then(note => {
+      if (!note) {
+        return response.status(404).end()
+      }
+
+      note.content = content
+      note.important = important
+
+      return note.save().then((updatedNote) => {
+        response.json(updatedNote)
+      })
+    })
+    .catch(error => next(error))
+})
+
+module.exports = notesRouter
+```
+
+## Express Routes Explained
+
+Express routes define how your application responds to client requests to specific endpoints. Each route consists of:
+
+- **Path**: The URL endpoint (e.g., `/api/notes`)
+- **HTTP Method**: GET, POST, PUT, DELETE, etc.
+- **Handler Function**: The function that executes when the route is matched
+
+### HTTP Methods and Their Purpose
+
+- **GET**: Retrieve data (should not modify server state)
+- **POST**: Create new resources
+- **PUT**: Update existing resources (replace entire resource)
+- **PATCH**: Partial updates to existing resources
+- **DELETE**: Remove resources
+
+### Route Parameters
+
+Access dynamic parts of the URL using route parameters:
+
+```javascript
+// Route parameter example
+app.get('/api/notes/:id', (request, response) => {
+  const id = request.params.id  // Access the :id parameter
+  // ... handle request
+})
+
+// Multiple parameters
+app.get('/api/users/:userId/notes/:noteId', (request, response) => {
+  const { userId, noteId } = request.params
+  // ... handle request
+})
+```
+
+### Query Parameters
+
+Access query string parameters from the URL:
+
+```javascript
+// URL: /api/notes?important=true&limit=10
 app.get('/api/notes', (request, response) => {
+  const { important, limit } = request.query
+  
+  let result = notes
+  
+  if (important !== undefined) {
+    result = result.filter(note => note.important === (important === 'true'))
+  }
+  
+  if (limit) {
+    result = result.slice(0, Number(limit))
+  }
+  
+  response.json(result)
+})
+```
+
+### Request Body Handling
+
+Process JSON data sent in request bodies:
+
+```javascript
+// Ensure you have JSON middleware
+app.use(express.json())
+
+app.post('/api/notes', (request, response) => {
+  const { content, important } = request.body
+  
+  // Validation
+  if (!content || content.trim() === '') {
+    return response.status(400).json({
+      error: 'Content cannot be empty'
+    })
+  }
+  
+  // Process the data...
+})
+```
+
+### Error Handling in Routes
+
+Implement proper error handling:
+
+```javascript
+app.get('/api/notes/:id', (request, response) => {
+  try {
+    const id = Number(request.params.id)
+    
+    if (isNaN(id)) {
+      return response.status(400).json({ error: 'Invalid ID format' })
+    }
+    
+    const note = notes.find(note => note.id === id)
+    
+    if (!note) {
+      return response.status(404).json({ error: 'Note not found' })
+    }
+    
+    response.json(note)
+  } catch (error) {
+    response.status(500).json({ error: 'Something went wrong' })
+  }
+})
+```
+
+### Organizing Routes with Express Router
+
+For larger applications, organize routes using Express Router:
+
+```javascript
+// routes/notes.js
+const notesRouter = require('express').Router()
+
+notesRouter.get('/', (request, response) => {
   response.json(notes)
 })
 
-app.get('/api/notes/:id', (request, response) => {
-  const id = Number(request.params.id)
-  const note = notes.find(note => note.id === id)
-  
-  if (note) {
-    response.json(note)
-  } else {
-    response.status(404).end()
-  }
+notesRouter.get('/:id', (request, response) => {
+  // ... handle GET by ID
 })
 
-// Start server
-const PORT = process.env.PORT || 3001
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
+notesRouter.post('/', (request, response) => {
+  // ... handle POST
 })
+
+notesRouter.put('/:id', (request, response) => {
+  // ... handle PUT
+})
+
+notesRouter.delete('/:id', (request, response) => {
+  // ... handle DELETE
+})
+
+module.exports = notesRouter
+
+// In your main app.js
+const notesRouter = require('./routes/notes')
+app.use('/api/notes', notesRouter)
 ```
 
 ## Running the Application
@@ -225,11 +415,65 @@ npm start
 
 ## Testing the API
 
-You can test your API endpoints:
+You can test your API endpoints using tools like curl, Postman, or VS Code REST Client:
 
+### GET Requests
 - `GET http://localhost:3001/` - Returns "Hello World!"
 - `GET http://localhost:3001/api/notes` - Returns all notes
 - `GET http://localhost:3001/api/notes/1` - Returns note with ID 1
+- `GET http://localhost:3001/api/notes?important=true` - Returns only important notes
+
+### POST Request (Create Note)
+```bash
+curl -X POST http://localhost:3001/api/notes \
+  -H "Content-Type: application/json" \
+  -d '{"content": "This is a new note", "important": true}'
+```
+
+### PUT Request (Update Note)
+```bash
+curl -X PUT http://localhost:3001/api/notes/1 \
+  -H "Content-Type: application/json" \
+  -d '{"content": "Updated note content", "important": false}'
+```
+
+### DELETE Request (Remove Note)
+```bash
+curl -X DELETE http://localhost:3001/api/notes/1
+```
+
+### Using VS Code REST Client
+
+Create a `requests.rest` file for testing:
+
+```http
+### Get all notes
+GET http://localhost:3001/api/notes
+
+### Get a specific note
+GET http://localhost:3001/api/notes/1
+
+### Create a new note
+POST http://localhost:3001/api/notes
+Content-Type: application/json
+
+{
+  "content": "This is a test note",
+  "important": true
+}
+
+### Update a note
+PUT http://localhost:3001/api/notes/1
+Content-Type: application/json
+
+{
+  "content": "Updated content",
+  "important": false
+}
+
+### Delete a note
+DELETE http://localhost:3001/api/notes/1
+```
 
 ## Additional Configuration
 
