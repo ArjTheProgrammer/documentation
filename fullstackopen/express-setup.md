@@ -36,16 +36,12 @@ Install other commonly used packages:
 
 ```bash
 npm install cors dotenv
-npm install --save-dev nodemon eslint @eslint/js
+npm install --save-dev eslint @eslint/js
 ```
 
 ## Development Dependencies
 
-For development, install nodemon to automatically restart the server when files change:
-
-```bash
-npm install --save-dev nodemon
-```
+For development, Node.js has built-in watch functionality that automatically restarts the server when files change. No additional dependencies needed for this feature.
 
 ### ESLint Setup
 
@@ -101,7 +97,7 @@ Update your `package.json` scripts section:
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js",
+    "dev": "node --watch index.js",
     "lint": "eslint .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -112,7 +108,8 @@ Update your `package.json` scripts section:
     "mongoose": "^7.5.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "eslint": "^8.50.0",
+    "@eslint/js": "^8.50.0"
   }
 }
 ```
@@ -400,7 +397,7 @@ app.use('/api/notes', notesRouter)
 ## Running the Application
 
 ### Development Mode
-Start the development server (with automatic restart on file changes):
+Start the development server (with automatic restart on file changes using Node.js built-in watch mode):
 
 ```bash
 npm run dev
@@ -453,12 +450,32 @@ GET http://localhost:3001/api/notes
 ### Get a specific note
 GET http://localhost:3001/api/notes/1
 
-### Create a new note
-POST http://localhost:3001/api/notes
+### Register a new user
+POST http://localhost:3001/api/users
 Content-Type: application/json
 
 {
-  "content": "This is a test note",
+  "username": "testuser",
+  "name": "Test User",
+  "password": "testpassword123"
+}
+
+### Login
+POST http://localhost:3001/api/login
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "testpassword123"
+}
+
+### Create a new note (requires authentication)
+POST http://localhost:3001/api/notes
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{
+  "content": "This is a test note requiring authentication",
   "important": true
 }
 
@@ -473,6 +490,9 @@ Content-Type: application/json
 
 ### Delete a note
 DELETE http://localhost:3001/api/notes/1
+
+### Get all users
+GET http://localhost:3001/api/users
 ```
 
 ## Additional Configuration
@@ -503,47 +523,279 @@ SECRET=your-secret-key-for-jwt
 
 ### Password Hashing with bcrypt
 
-Example of using bcrypt for password hashing:
+Create a users controller `controllers/users.js` for user registration with bcrypt:
 
 ```javascript
 const bcrypt = require('bcrypt')
+const usersRouter = require('express').Router()
+const User = require('../models/user')
 
-// Hash password before saving user
-const saltRounds = 10
-const passwordHash = await bcrypt.hash(password, saltRounds)
+usersRouter.get('/', async (request, response) => {
+  const users = await User
+    .find({}).populate('notes', { content: 1, important: 1 })
 
-// Compare password during login
-const passwordCorrect = user === null
-  ? false
-  : await bcrypt.compare(password, user.passwordHash)
+  response.json(users)
+})
+
+usersRouter.post('/', async (request, response, next) => {
+  const { username, name, password } = request.body
+
+  if (!password || password.length < 3) {
+    return response.status(400).json({
+      error: 'password must be at least 3 characters long'
+    })
+  }
+
+  const saltRounds = 10
+  const passwordHash = await bcrypt.hash(password, saltRounds)
+
+  const user = new User({
+    username,
+    name,
+    passwordHash,
+  })
+
+  try {
+    const savedUser = await user.save()
+    response.status(201).json(savedUser)
+  } catch (error) {
+    next(error)
+  }
+})
+
+module.exports = usersRouter
+```
+
+Create a login controller `controllers/login.js` for authentication:
+
+```javascript
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcrypt')
+const loginRouter = require('express').Router()
+const User = require('../models/user')
+
+loginRouter.post('/', async (request, response) => {
+  const { username, password } = request.body
+
+  const user = await User.findOne({ username })
+  const passwordCorrect = user === null
+    ? false
+    : await bcrypt.compare(password, user.passwordHash)
+
+  if (!(user && passwordCorrect)) {
+    return response.status(401).json({
+      error: 'invalid username or password'
+    })
+  }
+
+  const userForToken = {
+    username: user.username,
+    id: user._id,
+  }
+
+  const token = jwt.sign(userForToken, process.env.SECRET, { expiresIn: '1h' })
+
+  response
+    .status(200)
+    .send({ token, username: user.username, name: user.name })
+})
+
+module.exports = loginRouter
 ```
 
 ### JWT Authentication
 
-Example of using jsonwebtoken for authentication:
+Create middleware for token authentication `utils/middleware.js`:
 
 ```javascript
+const logger = require('./logger')
 const jwt = require('jsonwebtoken')
+const User = require('../models/user')
 
-// Generate token
-const userForToken = {
-  username: user.username,
-  id: user._id,
+const requestLogger = (request, response, next) => {
+  logger.info('Method:', request.method)
+  logger.info('Path:  ', request.path)
+  logger.info('Body:  ', request.body)
+  logger.info('---')
+  next()
 }
 
-const token = jwt.sign(userForToken, process.env.SECRET)
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: 'unknown endpoint' })
+}
 
-// Verify token (middleware)
-const getTokenFrom = request => {
+const errorHandler = (error, request, response, next) => {
+  logger.error(error.message)
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  } else if (error.name === 'ValidationError') {
+    return response.status(400).json({ error: error.message })
+  } else if (error.name === 'JsonWebTokenError') {
+    return response.status(401).json({ error: 'invalid token' })
+  } else if (error.name === 'TokenExpiredError') {
+    return response.status(401).json({ error: 'token expired' })
+  }
+
+  next(error)
+}
+
+const tokenExtractor = (request, response, next) => {
   const authorization = request.get('authorization')
   if (authorization && authorization.toLowerCase().startsWith('bearer ')) {
-    return authorization.substring(7)
+    request.token = authorization.substring(7)
   }
-  return null
+  next()
 }
 
-const token = getTokenFrom(request)
-const decodedToken = jwt.verify(token, process.env.SECRET)
+const userExtractor = async (request, response, next) => {
+  if (request.token) {
+    const decodedToken = jwt.verify(request.token, process.env.SECRET)
+    if (decodedToken.id) {
+      request.user = await User.findById(decodedToken.id)
+    }
+  }
+  next()
+}
+
+module.exports = {
+  requestLogger,
+  unknownEndpoint,
+  errorHandler,
+  tokenExtractor,
+  userExtractor
+}
+```
+
+Update the notes controller to use authentication `controllers/notes.js`:
+
+```javascript
+const notesRouter = require('express').Router()
+const Note = require('../models/note')
+const User = require('../models/user')
+const jwt = require('jsonwebtoken')
+
+notesRouter.get('/', async (request, response) => {
+  const notes = await Note
+    .find({}).populate('user', { username: 1, name: 1 })
+
+  response.json(notes)
+})
+
+notesRouter.get('/:id', async (request, response, next) => {
+  try {
+    const note = await Note.findById(request.params.id)
+    if (note) {
+      response.json(note)
+    } else {
+      response.status(404).end()
+    }
+  } catch (error) {
+    next(error)
+  }
+})
+
+notesRouter.post('/', async (request, response, next) => {
+  const body = request.body
+
+  if (!request.token) {
+    return response.status(401).json({ error: 'token missing' })
+  }
+
+  try {
+    const decodedToken = jwt.verify(request.token, process.env.SECRET)
+    if (!decodedToken.id) {
+      return response.status(401).json({ error: 'token invalid' })
+    }
+
+    const user = await User.findById(decodedToken.id)
+
+    const note = new Note({
+      content: body.content,
+      important: body.important || false,
+      user: user._id
+    })
+
+    const savedNote = await note.save()
+    user.notes = user.notes.concat(savedNote._id)
+    await user.save()
+
+    response.status(201).json(savedNote)
+  } catch (error) {
+    next(error)
+  }
+})
+
+notesRouter.delete('/:id', async (request, response, next) => {
+  try {
+    await Note.findByIdAndDelete(request.params.id)
+    response.status(204).end()
+  } catch (error) {
+    next(error)
+  }
+})
+
+notesRouter.put('/:id', async (request, response, next) => {
+  const { content, important } = request.body
+
+  try {
+    const updatedNote = await Note.findByIdAndUpdate(
+      request.params.id,
+      { content, important },
+      { new: true, runValidators: true, context: 'query' }
+    )
+
+    if (updatedNote) {
+      response.json(updatedNote)
+    } else {
+      response.status(404).end()
+    }
+  } catch (error) {
+    next(error)
+  }
+})
+
+module.exports = notesRouter
+```
+
+Update your main `index.js` to include the new routes and middleware:
+
+```javascript
+const express = require('express')
+const mongoose = require('mongoose')
+const config = require('./utils/config')
+const logger = require('./utils/logger')
+const middleware = require('./utils/middleware')
+const notesRouter = require('./controllers/notes')
+const usersRouter = require('./controllers/users')
+const loginRouter = require('./controllers/login')
+
+const app = express()
+
+logger.info('connecting to', config.MONGODB_URI)
+
+mongoose
+  .connect(config.MONGODB_URI)
+  .then(() => {
+    logger.info('connected to MongoDB')
+  })
+  .catch((error) => {
+    logger.error('error connection to MongoDB:', error.message)
+  })
+
+app.use(express.static('dist'))
+app.use(express.json())
+app.use(middleware.requestLogger)
+app.use(middleware.tokenExtractor)
+
+app.use('/api/notes', middleware.userExtractor, notesRouter)
+app.use('/api/users', usersRouter)
+app.use('/api/login', loginRouter)
+
+app.use(middleware.unknownEndpoint)
+app.use(middleware.errorHandler)
+
+module.exports = app
 ```
 
 ### CORS (Cross-Origin Resource Sharing)
@@ -585,6 +837,110 @@ Check your code for linting errors:
 
 ```bash
 npm run lint
+```
+
+## Required Model Files
+
+Create the User model `models/user.js`:
+
+```javascript
+const mongoose = require('mongoose')
+
+const userSchema = new mongoose.Schema({
+  username: {
+    type: String,
+    required: true,
+    unique: true,
+    minlength: 3
+  },
+  name: String,
+  passwordHash: String,
+  notes: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Note'
+    }
+  ],
+})
+
+userSchema.set('toJSON', {
+  transform: (document, returnedObject) => {
+    returnedObject.id = returnedObject._id.toString()
+    delete returnedObject._id
+    delete returnedObject.__v
+    // the passwordHash should not be revealed
+    delete returnedObject.passwordHash
+  }
+})
+
+const User = mongoose.model('User', userSchema)
+
+module.exports = User
+```
+
+Update the Note model `models/note.js` to include user reference:
+
+```javascript
+const mongoose = require('mongoose')
+
+const noteSchema = new mongoose.Schema({
+  content: {
+    type: String,
+    required: true,
+    minlength: 5
+  },
+  important: Boolean,
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }
+})
+
+noteSchema.set('toJSON', {
+  transform: (document, returnedObject) => {
+    returnedObject.id = returnedObject._id.toString()
+    delete returnedObject._id
+    delete returnedObject.__v
+  }
+})
+
+module.exports = mongoose.model('Note', noteSchema)
+```
+
+Create configuration file `utils/config.js`:
+
+```javascript
+require('dotenv').config()
+
+const PORT = process.env.PORT
+const MONGODB_URI = process.env.NODE_ENV === 'test'
+  ? process.env.TEST_MONGODB_URI
+  : process.env.MONGODB_URI
+
+module.exports = {
+  MONGODB_URI,
+  PORT
+}
+```
+
+Create logger utility `utils/logger.js`:
+
+```javascript
+const info = (...params) => {
+  if (process.env.NODE_ENV !== 'test') {
+    console.log(...params)
+  }
+}
+
+const error = (...params) => {
+  if (process.env.NODE_ENV !== 'test') {
+    console.error(...params)
+  }
+}
+
+module.exports = {
+  info, error
+}
 ```
 
 ## Next Steps
