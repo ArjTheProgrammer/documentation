@@ -1,10 +1,10 @@
-# Express.js Setup Guide
+# Express.js Backend Setup Guide
 
-This guide covers setting up a basic Express.js server, following the Full Stack Open course methodology.
+Complete setup guide for a Full Stack Open Express.js backend with authentication, database integration, and all necessary configurations.
 
-## Initial Project Setup
+## Project Initialization
 
-Create a new directory for your backend application and initialize it:
+Create a new directory and initialize the project:
 
 ```bash
 mkdir notes-backend
@@ -12,82 +12,40 @@ cd notes-backend
 npm init -y
 ```
 
-The `-y` flag accepts all default values for the npm initialization.
+## Dependencies Installation
 
-## Installing Dependencies
-
-Install Express.js and MongoDB dependencies:
+### Core Dependencies
 
 ```bash
-npm install express mongoose
+npm install express mongoose cors dotenv bcrypt jsonwebtoken
 ```
 
-### Authentication Dependencies
-
-For user authentication, install bcrypt for password hashing and jsonwebtoken for JWT tokens:
+### Development Dependencies
 
 ```bash
-npm install bcrypt jsonwebtoken
+npm install --save-dev nodemon eslint @eslint/js jest supertest cross-env
 ```
 
-### Additional Useful Dependencies
+### Dependencies Breakdown
 
-Install other commonly used packages:
+**Production Dependencies:**
+- `express` - Web framework
+- `mongoose` - MongoDB object modeling
+- `cors` - Cross-Origin Resource Sharing
+- `dotenv` - Environment variables
+- `bcrypt` - Password hashing
+- `jsonwebtoken` - JWT token implementation
 
-```bash
-npm install cors dotenv
-npm install --save-dev eslint @eslint/js
-```
+**Development Dependencies:**
+- `nodemon` - Auto-restart server on file changes
+- `eslint` & `@eslint/js` - Code linting
+- `jest` - Testing framework
+- `supertest` - HTTP testing
+- `cross-env` - Cross-platform environment variables
 
-## Development Dependencies
+## Package.json Configuration
 
-For development, Node.js has built-in watch functionality that automatically restarts the server when files change. No additional dependencies needed for this feature.
-
-### ESLint Setup
-
-Install ESLint for code linting and formatting:
-
-```bash
-npm install --save-dev eslint @eslint/js
-```
-
-Create `.eslintrc.js` configuration file:
-
-```javascript
-const js = require('@eslint/js')
-
-module.exports = [
-  js.configs.recommended,
-  {
-    files: ['**/*.js'],
-    languageOptions: {
-      sourceType: 'commonjs',
-      globals: {
-        process: 'readonly'
-      },
-      ecmaVersion: 'latest'
-    },
-    rules: {
-      'indent': ['error', 2],
-      'linebreak-style': ['error', 'unix'],
-      'quotes': ['error', 'single'],
-      'semi': ['error', 'never'],
-      'eqeqeq': 'error',
-      'no-trailing-spaces': 'error',
-      'object-curly-spacing': ['error', 'always'],
-      'arrow-spacing': ['error', { 'before': true, 'after': true }],
-      'no-console': 0
-    }
-  },
-  {
-    ignores: ['dist/**', 'build/**']
-  }
-]
-```
-
-## Package.json Scripts
-
-Update your `package.json` scripts section:
+Update your `package.json` with the following scripts and configuration:
 
 ```json
 {
@@ -96,33 +54,46 @@ Update your `package.json` scripts section:
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node --watch index.js",
-    "lint": "eslint .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "NODE_ENV=production node index.js",
+    "dev": "NODE_ENV=development nodemon index.js",
+    "test": "NODE_ENV=test jest --verbose --runInBand",
+    "lint": "eslint ."
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "express": "^4.18.2",
-    "mongoose": "^7.5.0"
+    "mongoose": "^7.5.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
+    "nodemon": "^3.0.1",
     "eslint": "^8.50.0",
-    "@eslint/js": "^8.50.0"
+    "@eslint/js": "^8.50.0",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "cross-env": "^7.0.3"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "globalTeardown": "./tests/teardown.js"
   }
 }
 ```
 
-## Project File Structure
+## Project Structure
 
-Organize your project with a clear file structure:
+Create the following directory structure:
 
 ```
 notes-backend/
 ├── controllers/
 │   ├── notes.js
-│   └── users.js
+│   ├── users.js
+│   └── login.js
 ├── models/
 │   ├── note.js
 │   └── user.js
@@ -133,479 +104,76 @@ notes-backend/
 ├── tests/
 │   ├── note_api.test.js
 │   └── user_api.test.js
+├── requests.rest
 ├── .env
-├── .eslintrc.js
+├── eslint.config.js
 ├── .gitignore
+├── app.js
 ├── index.js
 └── package.json
 ```
 
-### File Structure Explanation
+## Environment Configuration
 
-- **controllers/**: Route handlers and business logic
-- **models/**: Database schemas and models
-- **utils/**: Utility functions, configuration, and middleware
-- **tests/**: Test files
-- **index.js**: Main application entry point
+Create `.env` file:
 
-## Basic Express Server
-
-Create the main application file `index.js`:
-
-```javascript
-const express = require('express')
-const mongoose = require('mongoose')
-const config = require('./utils/config')
-const logger = require('./utils/logger')
-const middleware = require('./utils/middleware')
-const notesRouter = require('./controllers/notes')
-
-const app = express()
-
-logger.info('connecting to', config.MONGODB_URI)
-
-mongoose
-  .connect(config.MONGODB_URI)
-  .then(() => {
-    logger.info('connected to MongoDB')
-  })
-  .catch((error) => {
-    logger.error('error connection to MongoDB:', error.message)
-  })
-
-app.use(express.static('dist'))
-app.use(express.json())
-app.use(middleware.requestLogger)
-
-app.use('/api/notes', notesRouter)
-
-app.use(middleware.unknownEndpoint)
-app.use(middleware.errorHandler)
-
-module.exports = app
+```
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/noteApp?retryWrites=true&w=majority
+TEST_MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/testNoteApp?retryWrites=true&w=majority
+PORT=3001
+SECRET=your-secret-key-for-jwt-tokens
 ```
 
-Create the notes controller file `controllers/notes.js`:
+Create `.gitignore` file:
 
-```javascript
-const notesRouter = require('express').Router()
-const Note = require('../models/note')
-
-notesRouter.get('/', (request, response) => {
-  Note.find({}).then(notes => {
-    response.json(notes)
-  })
-})
-
-notesRouter.get('/:id', (request, response, next) => {
-  Note.findById(request.params.id)
-    .then(note => {
-      if (note) {
-        response.json(note)
-      } else {
-        response.status(404).end()
-      }
-    })
-    .catch(error => next(error))
-})
-
-notesRouter.post('/', (request, response, next) => {
-  const body = request.body
-
-  const note = new Note({
-    content: body.content,
-    important: body.important || false,
-  })
-
-  note.save()
-    .then(savedNote => {
-      response.json(savedNote)
-    })
-    .catch(error => next(error))
-})
-
-notesRouter.delete('/:id', (request, response, next) => {
-  Note.findByIdAndDelete(request.params.id)
-    .then(() => {
-      response.status(204).end()
-    })
-    .catch(error => next(error))
-})
-
-notesRouter.put('/:id', (request, response, next) => {
-  const { content, important } = request.body
-
-  Note.findById(request.params.id)
-    .then(note => {
-      if (!note) {
-        return response.status(404).end()
-      }
-
-      note.content = content
-      note.important = important
-
-      return note.save().then((updatedNote) => {
-        response.json(updatedNote)
-      })
-    })
-    .catch(error => next(error))
-})
-
-module.exports = notesRouter
+```
+node_modules
+.env
+*.log
+dist
+build
 ```
 
-## Express Routes Explained
+## Configuration Files
 
-Express routes define how your application responds to client requests to specific endpoints. Each route consists of:
-
-- **Path**: The URL endpoint (e.g., `/api/notes`)
-- **HTTP Method**: GET, POST, PUT, DELETE, etc.
-- **Handler Function**: The function that executes when the route is matched
-
-### HTTP Methods and Their Purpose
-
-- **GET**: Retrieve data (should not modify server state)
-- **POST**: Create new resources
-- **PUT**: Update existing resources (replace entire resource)
-- **PATCH**: Partial updates to existing resources
-- **DELETE**: Remove resources
-
-### Route Parameters
-
-Access dynamic parts of the URL using route parameters:
-
-```javascript
-// Route parameter example
-app.get('/api/notes/:id', (request, response) => {
-  const id = request.params.id  // Access the :id parameter
-  // ... handle request
-})
-
-// Multiple parameters
-app.get('/api/users/:userId/notes/:noteId', (request, response) => {
-  const { userId, noteId } = request.params
-  // ... handle request
-})
-```
-
-### Query Parameters
-
-Access query string parameters from the URL:
-
-```javascript
-// URL: /api/notes?important=true&limit=10
-app.get('/api/notes', (request, response) => {
-  const { important, limit } = request.query
-  
-  let result = notes
-  
-  if (important !== undefined) {
-    result = result.filter(note => note.important === (important === 'true'))
-  }
-  
-  if (limit) {
-    result = result.slice(0, Number(limit))
-  }
-  
-  response.json(result)
-})
-```
-
-### Request Body Handling
-
-Process JSON data sent in request bodies:
-
-```javascript
-// Ensure you have JSON middleware
-app.use(express.json())
-
-app.post('/api/notes', (request, response) => {
-  const { content, important } = request.body
-  
-  // Validation
-  if (!content || content.trim() === '') {
-    return response.status(400).json({
-      error: 'Content cannot be empty'
-    })
-  }
-  
-  // Process the data...
-})
-```
-
-### Error Handling in Routes
-
-Implement proper error handling:
-
-```javascript
-app.get('/api/notes/:id', (request, response) => {
-  try {
-    const id = Number(request.params.id)
-    
-    if (isNaN(id)) {
-      return response.status(400).json({ error: 'Invalid ID format' })
-    }
-    
-    const note = notes.find(note => note.id === id)
-    
-    if (!note) {
-      return response.status(404).json({ error: 'Note not found' })
-    }
-    
-    response.json(note)
-  } catch (error) {
-    response.status(500).json({ error: 'Something went wrong' })
-  }
-})
-```
-
-### Organizing Routes with Express Router
-
-For larger applications, organize routes using Express Router:
-
-```javascript
-// routes/notes.js
-const notesRouter = require('express').Router()
-
-notesRouter.get('/', (request, response) => {
-  response.json(notes)
-})
-
-notesRouter.get('/:id', (request, response) => {
-  // ... handle GET by ID
-})
-
-notesRouter.post('/', (request, response) => {
-  // ... handle POST
-})
-
-notesRouter.put('/:id', (request, response) => {
-  // ... handle PUT
-})
-
-notesRouter.delete('/:id', (request, response) => {
-  // ... handle DELETE
-})
-
-module.exports = notesRouter
-
-// In your main app.js
-const notesRouter = require('./routes/notes')
-app.use('/api/notes', notesRouter)
-```
-
-## Running the Application
-
-### Development Mode
-Start the development server (with automatic restart on file changes using Node.js built-in watch mode):
-
-```bash
-npm run dev
-```
-
-### Production Mode
-Start the server in production mode:
-
-```bash
-npm start
-```
-
-## Testing the API
-
-You can test your API endpoints using tools like curl, Postman, or VS Code REST Client:
-
-### GET Requests
-- `GET http://localhost:3001/` - Returns "Hello World!"
-- `GET http://localhost:3001/api/notes` - Returns all notes
-- `GET http://localhost:3001/api/notes/1` - Returns note with ID 1
-- `GET http://localhost:3001/api/notes?important=true` - Returns only important notes
-
-### POST Request (Create Note)
-```bash
-curl -X POST http://localhost:3001/api/notes \
-  -H "Content-Type: application/json" \
-  -d '{"content": "This is a new note", "important": true}'
-```
-
-### PUT Request (Update Note)
-```bash
-curl -X PUT http://localhost:3001/api/notes/1 \
-  -H "Content-Type: application/json" \
-  -d '{"content": "Updated note content", "important": false}'
-```
-
-### DELETE Request (Remove Note)
-```bash
-curl -X DELETE http://localhost:3001/api/notes/1
-```
-
-### Using VS Code REST Client
-
-Create a `requests.rest` file for testing:
-
-```http
-### Get all notes
-GET http://localhost:3001/api/notes
-
-### Get a specific note
-GET http://localhost:3001/api/notes/1
-
-### Register a new user
-POST http://localhost:3001/api/users
-Content-Type: application/json
-
-{
-  "username": "testuser",
-  "name": "Test User",
-  "password": "testpassword123"
-}
-
-### Login
-POST http://localhost:3001/api/login
-Content-Type: application/json
-
-{
-  "username": "testuser",
-  "password": "testpassword123"
-}
-
-### Create a new note (requires authentication)
-POST http://localhost:3001/api/notes
-Content-Type: application/json
-Authorization: Bearer YOUR_JWT_TOKEN_HERE
-
-{
-  "content": "This is a test note requiring authentication",
-  "important": true
-}
-
-### Update a note
-PUT http://localhost:3001/api/notes/1
-Content-Type: application/json
-
-{
-  "content": "Updated content",
-  "important": false
-}
-
-### Delete a note
-DELETE http://localhost:3001/api/notes/1
-
-### Get all users
-GET http://localhost:3001/api/users
-```
-
-## Additional Configuration
-
-### Environment Variables
-
-Create a `.env` file for environment-specific configuration:
-
-```bash
-npm install dotenv
-```
-
-Add to your `index.js`:
+### utils/config.js
 
 ```javascript
 require('dotenv').config()
+
+const PORT = process.env.PORT || 3001
+
+const MONGODB_URI = process.env.NODE_ENV === 'test' 
+  ? process.env.TEST_MONGODB_URI
+  : process.env.MONGODB_URI
+
+module.exports = {
+  MONGODB_URI,
+  PORT
+}
 ```
 
-Example `.env` file:
-
-```
-NODE_ENV=development
-PORT=3001
-MONGODB_URI=mongodb://localhost:27017/notes
-TEST_MONGODB_URI=mongodb://localhost:27017/notes-test
-SECRET=your-secret-key-for-jwt
-```
-
-### Password Hashing with bcrypt
-
-Create a users controller `controllers/users.js` for user registration with bcrypt:
+### utils/logger.js
 
 ```javascript
-const bcrypt = require('bcrypt')
-const usersRouter = require('express').Router()
-const User = require('../models/user')
-
-usersRouter.get('/', async (request, response) => {
-  const users = await User
-    .find({}).populate('notes', { content: 1, important: 1 })
-
-  response.json(users)
-})
-
-usersRouter.post('/', async (request, response, next) => {
-  const { username, name, password } = request.body
-
-  if (!password || password.length < 3) {
-    return response.status(400).json({
-      error: 'password must be at least 3 characters long'
-    })
+const info = (...params) => {
+  if (process.env.NODE_ENV !== 'test') {
+    console.log(...params)
   }
+}
 
-  const saltRounds = 10
-  const passwordHash = await bcrypt.hash(password, saltRounds)
-
-  const user = new User({
-    username,
-    name,
-    passwordHash,
-  })
-
-  try {
-    const savedUser = await user.save()
-    response.status(201).json(savedUser)
-  } catch (error) {
-    next(error)
+const error = (...params) => {
+  if (process.env.NODE_ENV !== 'test') {
+    console.error(...params)
   }
-})
+}
 
-module.exports = usersRouter
+module.exports = {
+  info, error
+}
 ```
 
-Create a login controller `controllers/login.js` for authentication:
-
-```javascript
-const jwt = require('jsonwebtoken')
-const bcrypt = require('bcrypt')
-const loginRouter = require('express').Router()
-const User = require('../models/user')
-
-loginRouter.post('/', async (request, response) => {
-  const { username, password } = request.body
-
-  const user = await User.findOne({ username })
-  const passwordCorrect = user === null
-    ? false
-    : await bcrypt.compare(password, user.passwordHash)
-
-  if (!(user && passwordCorrect)) {
-    return response.status(401).json({
-      error: 'invalid username or password'
-    })
-  }
-
-  const userForToken = {
-    username: user.username,
-    id: user._id,
-  }
-
-  const token = jwt.sign(userForToken, process.env.SECRET, { expiresIn: '1h' })
-
-  response
-    .status(200)
-    .send({ token, username: user.username, name: user.name })
-})
-
-module.exports = loginRouter
-```
-
-### JWT Authentication
-
-Create middleware for token authentication `utils/middleware.js`:
+### utils/middleware.js
 
 ```javascript
 const logger = require('./logger')
@@ -632,7 +200,7 @@ const errorHandler = (error, request, response, next) => {
   } else if (error.name === 'ValidationError') {
     return response.status(400).json({ error: error.message })
   } else if (error.name === 'JsonWebTokenError') {
-    return response.status(401).json({ error: 'invalid token' })
+    return response.status(400).json({ error: 'token missing or invalid' })
   } else if (error.name === 'TokenExpiredError') {
     return response.status(401).json({ error: 'token expired' })
   }
@@ -642,8 +210,8 @@ const errorHandler = (error, request, response, next) => {
 
 const tokenExtractor = (request, response, next) => {
   const authorization = request.get('authorization')
-  if (authorization && authorization.toLowerCase().startsWith('bearer ')) {
-    request.token = authorization.substring(7)
+  if (authorization && authorization.startsWith('Bearer ')) {
+    request.token = authorization.replace('Bearer ', '')
   }
   next()
 }
@@ -666,8 +234,76 @@ module.exports = {
   userExtractor
 }
 ```
+## Database Models
 
-Update the notes controller to use authentication `controllers/notes.js`:
+### models/note.js
+
+```javascript
+const mongoose = require('mongoose')
+
+const noteSchema = new mongoose.Schema({
+  content: {
+    type: String,
+    required: true,
+    minlength: 5
+  },
+  important: Boolean,
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }
+})
+
+noteSchema.set('toJSON', {
+  transform: (document, returnedObject) => {
+    returnedObject.id = returnedObject._id.toString()
+    delete returnedObject._id
+    delete returnedObject.__v
+  }
+})
+
+module.exports = mongoose.model('Note', noteSchema)
+```
+
+### models/user.js
+
+```javascript
+const mongoose = require('mongoose')
+
+const userSchema = new mongoose.Schema({
+  username: {
+    type: String,
+    required: true,
+    unique: true,
+    minlength: 3
+  },
+  name: String,
+  passwordHash: String,
+  notes: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Note'
+    }
+  ],
+})
+
+userSchema.set('toJSON', {
+  transform: (document, returnedObject) => {
+    returnedObject.id = returnedObject._id.toString()
+    delete returnedObject._id
+    delete returnedObject.__v
+    delete returnedObject.passwordHash
+  }
+})
+
+const User = mongoose.model('User', userSchema)
+
+module.exports = User
+```
+
+## Controllers
+
+### controllers/notes.js
 
 ```javascript
 const notesRouter = require('express').Router()
@@ -758,31 +394,116 @@ notesRouter.put('/:id', async (request, response, next) => {
 module.exports = notesRouter
 ```
 
-Update your main `index.js` to include the new routes and middleware:
+### controllers/users.js
 
 ```javascript
-const express = require('express')
-const mongoose = require('mongoose')
+const bcrypt = require('bcrypt')
+const usersRouter = require('express').Router()
+const User = require('../models/user')
+
+usersRouter.get('/', async (request, response) => {
+  const users = await User
+    .find({}).populate('notes', { content: 1, important: 1 })
+
+  response.json(users)
+})
+
+usersRouter.post('/', async (request, response, next) => {
+  const { username, name, password } = request.body
+
+  if (!password || password.length < 3) {
+    return response.status(400).json({
+      error: 'password must be at least 3 characters long'
+    })
+  }
+
+  const saltRounds = 10
+  const passwordHash = await bcrypt.hash(password, saltRounds)
+
+  const user = new User({
+    username,
+    name,
+    passwordHash,
+  })
+
+  try {
+    const savedUser = await user.save()
+    response.status(201).json(savedUser)
+  } catch (error) {
+    next(error)
+  }
+})
+
+module.exports = usersRouter
+```
+
+### controllers/login.js
+
+```javascript
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcrypt')
+const loginRouter = require('express').Router()
+const User = require('../models/user')
+
+loginRouter.post('/', async (request, response) => {
+  const { username, password } = request.body
+
+  const user = await User.findOne({ username })
+  const passwordCorrect = user === null
+    ? false
+    : await bcrypt.compare(password, user.passwordHash)
+
+  if (!(user && passwordCorrect)) {
+    return response.status(401).json({
+      error: 'invalid username or password'
+    })
+  }
+
+  const userForToken = {
+    username: user.username,
+    id: user._id,
+  }
+
+  const token = jwt.sign(userForToken, process.env.SECRET, { expiresIn: '1h' })
+
+  response
+    .status(200)
+    .send({ token, username: user.username, name: user.name })
+})
+
+module.exports = loginRouter
+```
+
+## Main Application Files
+
+### app.js
+
+```javascript
+require('dotenv').config()
 const config = require('./utils/config')
-const logger = require('./utils/logger')
-const middleware = require('./utils/middleware')
+const express = require('express')
+const app = express()
+const cors = require('cors')
 const notesRouter = require('./controllers/notes')
 const usersRouter = require('./controllers/users')
 const loginRouter = require('./controllers/login')
+const middleware = require('./utils/middleware')
+const logger = require('./utils/logger')
+const mongoose = require('mongoose')
 
-const app = express()
+mongoose.set('strictQuery', false)
 
 logger.info('connecting to', config.MONGODB_URI)
 
-mongoose
-  .connect(config.MONGODB_URI)
+mongoose.connect(config.MONGODB_URI)
   .then(() => {
     logger.info('connected to MongoDB')
   })
   .catch((error) => {
-    logger.error('error connection to MongoDB:', error.message)
+    logger.error('error connecting to MongoDB:', error.message)
   })
 
+app.use(cors())
 app.use(express.static('dist'))
 app.use(express.json())
 app.use(middleware.requestLogger)
@@ -798,158 +519,209 @@ app.use(middleware.errorHandler)
 module.exports = app
 ```
 
-### CORS (Cross-Origin Resource Sharing)
-
-If you plan to connect a frontend, install and configure CORS:
-
-```bash
-npm install cors
-```
-
-Add to your `index.js`:
+### index.js
 
 ```javascript
-const cors = require('cors')
-app.use(cors())
+const app = require('./app')
+const config = require('./utils/config')
+const logger = require('./utils/logger')
+
+app.listen(config.PORT, () => {
+  logger.info(`Server running on port ${config.PORT}`)
+})
 ```
 
-## Git Setup
+## ESLint Configuration
 
-Initialize git repository and create `.gitignore`:
+Create `eslint.config.js`:
 
+```javascript
+const js = require('@eslint/js')
+
+module.exports = [
+  js.configs.recommended,
+  {
+    files: ['**/*.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: {
+        process: 'readonly'
+      },
+      ecmaVersion: 'latest'
+    },
+    rules: {
+      'indent': ['error', 2],
+      'linebreak-style': ['error', 'unix'],
+      'quotes': ['error', 'single'],
+      'semi': ['error', 'never'],
+      'eqeqeq': 'error',
+      'no-trailing-spaces': 'error',
+      'object-curly-spacing': ['error', 'always'],
+      'arrow-spacing': ['error', { 'before': true, 'after': true }],
+      'no-console': 0
+    }
+  },
+  {
+    ignores: ['dist/**', 'build/**']
+  }
+]
+```
+
+## Testing Setup
+
+### Basic Test Example - tests/note_api.test.js
+
+```javascript
+const mongoose = require('mongoose')
+const supertest = require('supertest')
+const app = require('../app')
+const api = supertest(app)
+const Note = require('../models/note')
+const User = require('../models/user')
+
+const initialNotes = [
+  {
+    content: 'HTML is easy',
+    important: false,
+  },
+  {
+    content: 'Browser can execute only JavaScript',
+    important: true,
+  },
+]
+
+beforeEach(async () => {
+  await Note.deleteMany({})
+  await User.deleteMany({})
+
+  const user = new User({ username: 'root', passwordHash: 'sekret' })
+  await user.save()
+
+  for (let note of initialNotes) {
+    let noteObject = new Note(note)
+    noteObject.user = user._id
+    await noteObject.save()
+  }
+})
+
+test('notes are returned as json', async () => {
+  await api
+    .get('/api/notes')
+    .expect(200)
+    .expect('Content-Type', /application\/json/)
+})
+
+test('all notes are returned', async () => {
+  const response = await api.get('/api/notes')
+  expect(response.body).toHaveLength(initialNotes.length)
+})
+
+afterAll(async () => {
+  await mongoose.connection.close()
+})
+```
+
+### Test Teardown - tests/teardown.js
+
+```javascript
+module.exports = async () => {
+  console.log('Test teardown completed')
+}
+```
+
+## API Testing with REST Client
+
+Create `requests.rest` file:
+
+```http
+### Get all notes
+GET http://localhost:3001/api/notes
+
+### Get a specific note
+GET http://localhost:3001/api/notes/{{noteId}}
+
+### Create a new user
+POST http://localhost:3001/api/users
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "name": "Test User",
+  "password": "testpassword"
+}
+
+### Login
+POST http://localhost:3001/api/login
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "testpassword"
+}
+
+### Create a new note (requires authentication)
+POST http://localhost:3001/api/notes
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "content": "This is a test note",
+  "important": true
+}
+
+### Update a note
+PUT http://localhost:3001/api/notes/{{noteId}}
+Content-Type: application/json
+
+{
+  "content": "Updated content",
+  "important": false
+}
+
+### Delete a note
+DELETE http://localhost:3001/api/notes/{{noteId}}
+
+### Get all users
+GET http://localhost:3001/api/users
+```
+
+## Running the Application
+
+### Development Mode
 ```bash
-git init
+npm run dev
 ```
 
-Create `.gitignore` file:
-
-```
-node_modules
-.env
-*.log
-dist
-build
+### Production Mode
+```bash
+npm start
 ```
 
-### Running ESLint
+### Running Tests
+```bash
+npm test
+```
 
-Check your code for linting errors:
-
+### ESLint Check
 ```bash
 npm run lint
 ```
 
-## Required Model Files
+## Key Features Included
 
-Create the User model `models/user.js`:
+✅ **Express.js Server** with proper structure  
+✅ **MongoDB Integration** with Mongoose  
+✅ **User Authentication** with bcrypt and JWT  
+✅ **CORS Configuration** for frontend integration  
+✅ **Environment Variables** with dotenv  
+✅ **Error Handling** middleware  
+✅ **Request Logging** middleware  
+✅ **Token Extraction** middleware  
+✅ **ESLint Configuration** for code quality  
+✅ **Testing Setup** with Jest and Supertest  
+✅ **REST API** endpoints for CRUD operations  
+✅ **Password Hashing** with bcrypt  
+✅ **JWT Token Authentication**  
+✅ **Database Population** (populate references)
 
-```javascript
-const mongoose = require('mongoose')
-
-const userSchema = new mongoose.Schema({
-  username: {
-    type: String,
-    required: true,
-    unique: true,
-    minlength: 3
-  },
-  name: String,
-  passwordHash: String,
-  notes: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Note'
-    }
-  ],
-})
-
-userSchema.set('toJSON', {
-  transform: (document, returnedObject) => {
-    returnedObject.id = returnedObject._id.toString()
-    delete returnedObject._id
-    delete returnedObject.__v
-    // the passwordHash should not be revealed
-    delete returnedObject.passwordHash
-  }
-})
-
-const User = mongoose.model('User', userSchema)
-
-module.exports = User
-```
-
-Update the Note model `models/note.js` to include user reference:
-
-```javascript
-const mongoose = require('mongoose')
-
-const noteSchema = new mongoose.Schema({
-  content: {
-    type: String,
-    required: true,
-    minlength: 5
-  },
-  important: Boolean,
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }
-})
-
-noteSchema.set('toJSON', {
-  transform: (document, returnedObject) => {
-    returnedObject.id = returnedObject._id.toString()
-    delete returnedObject._id
-    delete returnedObject.__v
-  }
-})
-
-module.exports = mongoose.model('Note', noteSchema)
-```
-
-Create configuration file `utils/config.js`:
-
-```javascript
-require('dotenv').config()
-
-const PORT = process.env.PORT
-const MONGODB_URI = process.env.NODE_ENV === 'test'
-  ? process.env.TEST_MONGODB_URI
-  : process.env.MONGODB_URI
-
-module.exports = {
-  MONGODB_URI,
-  PORT
-}
-```
-
-Create logger utility `utils/logger.js`:
-
-```javascript
-const info = (...params) => {
-  if (process.env.NODE_ENV !== 'test') {
-    console.log(...params)
-  }
-}
-
-const error = (...params) => {
-  if (process.env.NODE_ENV !== 'test') {
-    console.error(...params)
-  }
-}
-
-module.exports = {
-  info, error
-}
-```
-
-## Next Steps
-
-- Add POST, PUT, and DELETE routes for full CRUD functionality
-- Implement middleware for logging requests
-- Add error handling middleware
-- Connect to a database (MongoDB with Mongoose)
-- Add input validation
-- Implement user authentication with bcrypt and JWT
-- Add unit and integration tests
-- Set up CI/CD pipeline
+This setup provides a complete Full Stack Open backend with all necessary configurations and dependencies for building a production-ready Express.js application.
