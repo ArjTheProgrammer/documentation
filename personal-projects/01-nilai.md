@@ -15,6 +15,9 @@ Currently in development
 - Frontend: [Nilai frontend](https://github.com/ArjTheProgrammer/nilai-frontend/) by Jose Neil Silagan Jr.
 - Backend: [Nilai backend](https://github.com/ArjTheProgrammer/nilai-backend/) by Jose Neil Silagan Jr.
 - AI: [Nilai AI](https://github.com/ArjTheProgrammer/nilai-nlp/) by Jose Neil Silagan Jr.
+- Frontend: [Nilai frontend](https://github.com/ArjTheProgrammer/nilai-frontend/) by Jose Neil Silagan Jr.
+- Backend: [Nilai backend](https://github.com/ArjTheProgrammer/nilai-backend/) by Jose Neil Silagan Jr.
+- AI: [Nilai AI](https://github.com/ArjTheProgrammer/nilai-nlp/) by Jose Neil Silagan Jr.
 
 **Tech Stack:**
 - **Frontend:** React.js, Tailwind CSS, shadcn/ui
