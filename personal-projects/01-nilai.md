@@ -12,9 +12,9 @@ This is for personal use only and I am still considering making it public in the
 Currently in development
 
 **Repository Links:**
-- Frontend: [Nilai frontend](https://github.com/ArjTheProgrammer/nilai-frontend/)
-- Backend: [Nilai backend](https://github.com/ArjTheProgrammer/nilai-backend/)
-- AI: [Nilai AI](https://github.com/ArjTheProgrammer/nilai-nlp/)
+- Frontend: [Nilai frontend](https://github.com/ArjTheProgrammer/nilai-frontend/) by Jose Neil Silagan Jr.
+- Backend: [Nilai backend](https://github.com/ArjTheProgrammer/nilai-backend/) by Jose Neil Silagan Jr.
+- AI: [Nilai AI](https://github.com/ArjTheProgrammer/nilai-nlp/) by Jose Neil Silagan Jr.
 
 **Tech Stack:**
 - **Frontend:** React.js, Tailwind CSS, shadcn/ui
@@ -37,3 +37,13 @@ Currently in development
 - *As a user, I want to receive a relatable quote daily, so that I can better cope with challenges and stay motivated and mindful during times aspiration and success.*
 - *As a user, I want to have my journal entries summarized, so that I can better understand the themes I wrote about in past entries and reflect on my attitudes toward them.*
 - *As a user, I want to have data insights about my emotions, so that I can be more mindful and aware of my emotional patterns. Awareness is the keystone of emotional intelligence.*
+
+---
+
+## Copyright
+
+© 2025 Jose Neil Silagan Jr. All rights reserved.
+
+This project is protected by copyright law. No part of this software, documentation, or related materials may be reproduced, distributed, transmitted, or used without explicit written permission from the author.
+
+**For inquiries, please contact me through GitHub.**
