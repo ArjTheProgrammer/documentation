@@ -1,7 +1,7 @@
 ````markdown
-# 📘 Project Documentation: [Project Name]
+# Project Documentation: [Project Name]
 
-## 🧾 Overview
+## Overview
 
 **One-liner Description:**  
 [Brief description of what your app does in one sentence.]
@@ -26,42 +26,42 @@
 - AI/ML: [OpenAI, HuggingFace, etc. (if used)]
 ---
 
-## 🧩 Features
+## Features
 
-### ✅ Core Features (MVP)
+### Core Features (MVP)
 - [Feature 1]
 - [Feature 2]
 - [Feature 3]
 
-### ✨ Planned / Future Features
+### Planned / Future Features
 - [Feature 1]
 - [Feature 2]
 
-### 🙋 User Stories
+### User Stories
 - *As a user, I want to [action], so that I can [benefit].*
 - *As a user, I want to [action], so that I can [benefit].*
 ---
 
-## 🧠 System Architecture
+## System Architecture
 
-### 🗺️ Architecture Diagram
+### Architecture Diagram
 *(Insert diagram here or describe architecture)*
 
-### 🔄 Data Flow
+### Data Flow
 *(Briefly describe how data moves in your app)*
 
-### 🔧 Tech Stack Justification
+### Tech Stack Justification
 - [Why React? Why PostgreSQL? Why this LLM? etc.]
 ---
 
-## 🛠️ Development Setup
+## Development Setup
 
-### 🧱 Prerequisites
+### Prerequisites
 - [Node.js version]
 - [Database software]
 - [.env file]
 
-### ⚙️ Installation & Running
+### Installation & Running
 
 ```bash
 # Clone the repo
@@ -78,7 +78,7 @@ npm install
 npm run dev
 ````
 
-### 🔐 Environment Variables (`.env`)
+### Environment Variables (`.env`)
 
 ```
 DB_URL=your_database_url
@@ -88,17 +88,17 @@ LLM_API_KEY=your_llm_key
 
 ---
 
-## 🧪 Testing
+## Testing
 
-### 🔍 Testing Strategy
+### Testing Strategy
 
 * \[Manual testing, Unit testing, Integration testing]
 
-### 🧪 Tools Used
+### Tools Used
 
 * \[Jest, Supertest, React Testing Library, etc.]
 
-### 🧪 How to Run Tests
+### How to Run Tests
 
 ```bash
 # Backend
@@ -112,7 +112,7 @@ npm test
 
 ---
 
-## 📈 Changelog
+## Changelog
 
 ```markdown
 ## [v0.1.0] - YYYY-MM-DD
@@ -129,23 +129,23 @@ npm test
 
 ---
 
-## 🧑‍💻 Developer Notes
+## Developer Notes
 
-### ❗ Known Issues
+### Known Issues
 
 * \[e.g. Tagging sometimes fails on long entries]
 
-### 🔁 Refactoring Notes
+### Refactoring Notes
 
 * \[e.g. Extract prompts into config file]
 
-### 💡 Future Considerations
+### Future Considerations
 
 * \[e.g. Migrate from REST to GraphQL]
 
 ---
 
-## 🔐 Security & Privacy
+## Security & Privacy
 
 * No user data is stored unless user consents.
 * API keys and credentials are stored in `.env` and not committed to the repo.
@@ -153,7 +153,7 @@ npm test
 
 ---
 
-## 📝 License & Attribution
+## License & Attribution
 
 * License: \[MIT, Apache 2.0, etc.]
 * Icons by \[source]
@@ -161,22 +161,22 @@ npm test
 
 ---
 
-## 📚 Appendix
+## Appendix
 
-### 📄 Prompt Sample
+### Prompt Sample
 
 ```
 You are a journaling assistant. Analyze the following entry and return 3–5 emotions with confidence scores...
 ```
 
-### 🧪 Sample .env (DO NOT SHARE SECRETS)
+### Sample .env (DO NOT SHARE SECRETS)
 
 ```
 DB_URL=postgres://localhost/myapp
 LLM_API_KEY=sk-*********
 ```
 
-### 🔧 Useful Commands
+### Useful Commands
 
 ```bash
 # Restart database
